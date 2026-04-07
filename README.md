@@ -10,6 +10,8 @@
 - JSON 格式输出
 - 清晰的日志输出
 - 验证码检测
+- 支持自定义 Cookies
+- 测试模式（使用无验证码网站测试）
 
 ## 安装
 
@@ -20,27 +22,50 @@ uv sync
 
 ## 使用
 
+### 基本用法
+
 ```bash
-# 运行爬虫
+# 运行爬虫（抓取 miobt.com）
 uv run main.py
+
+# 测试模式（抓取 books.toscrape.com，无验证码）
+uv run main.py --test
+
+# 使用 Cookies 绕过验证码
+uv run main.py --cookies "session_id=xxx; user_token=yyy"
 ```
+
+### 命令行参数
+
+| 参数 | 说明 |
+|------|------|
+| `--test` | 使用测试模式，抓取 books.toscrape.com（无验证码） |
+| `--cookies "..."` | 传递自定义 Cookies，格式: `name1=value1; name2=value2` |
 
 ## 输出
 
-数据保存在 `output/anime_data.json`，格式如下：
+### 正常模式
+
+数据保存在 `output/anime_data.json`
+
+### 测试模式
+
+数据保存在 `output/test_books_data.json`
+
+格式如下：
 
 ```json
 {
-  "crawl_time": "2026-04-07T20:30:00",
+  "crawl_time": "2026-04-07T21:56:35",
   "total_count": 20,
   "data": [
     {
-      "title": "动漫标题",
-      "download_link": "magnet:?xt=urn:...",
-      "size": "2.5GB",
-      "publish_time": "2026-04-07",
-      "seeders": 10,
-      "leechers": 5
+      "title": "书籍标题",
+      "download_link": "https://...",
+      "size": "£51.77",
+      "publish_time": "评分: Five",
+      "seeders": 0,
+      "leechers": 0
     }
   ]
 }
@@ -65,4 +90,5 @@ uv run main.py
 - 请遵守网站的使用条款
 - 适当设置请求延迟避免被封禁
 - 网站结构变化可能导致解析失败，需要调整选择器
-- 目标网站有验证码保护，可能需要额外处理
+- 目标网站有验证码保护，使用 `--cookies` 参数传递验证后的 Cookies
+- 使用 `--test` 模式可以测试爬虫功能，无需处理验证码
