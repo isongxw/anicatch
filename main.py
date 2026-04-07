@@ -2,10 +2,13 @@
 """
 miobt.com 动漫资源爬虫
 使用 Scrapling 库抓取首页数据并保存为 JSON 格式
+支持 libtorrent 下载 magnet 链接
 """
 
 import json
 import logging
+import re
+import sys
 import time
 import urllib.parse
 from datetime import datetime
@@ -13,13 +16,21 @@ from pathlib import Path
 from typing import Any, Optional
 
 from curl_cffi import requests
-from scrapling import Fetcher, Selector
+from scrapling import Selector
+
+# 尝试导入 libtorrent
+try:
+    import libtorrent as lt
+    HAS_LIBTORRENT = True
+except ImportError:
+    HAS_LIBTORRENT = False
 
 
 # 配置常量
 TARGET_URL = "https://miobt.com/"
 OUTPUT_DIR = Path("output")
 OUTPUT_FILE = OUTPUT_DIR / "anime_data.json"
+DOWNLOAD_DIR = Path("downloads")  # 下载目录
 
 # 测试用备用网站（无验证码）
 TEST_URL = "https://books.toscrape.com/"
@@ -28,6 +39,10 @@ TEST_URL = "https://books.toscrape.com/"
 REQUEST_DELAY = 2.0  # 基础延迟（秒）
 MAX_RETRIES = 3  # 最大重试次数
 RETRY_DELAYS = [1, 2, 4]  # 重试间隔（秒）
+
+# 下载配置
+DOWNLOAD_TIMEOUT = 300  # 下载超时（秒）
+DOWNLOAD_PORTS = (6881, 6891)  # BT 端口范围
 
 # 日志配置
 LOG_FORMAT = "[%(asctime)s] %(levelname)s: %(message)s"
@@ -324,6 +339,216 @@ def parse_books_data(page: Any) -> list[AnimeData]:
     return books_list
 
 
+def get_magnet_link(detail_url: str) -> Optional[str]:
+    """
+    从详情页获取 magnet 链接
+
+    Args:
+        detail_url: 详情页 URL
+
+    Returns:
+        magnet 链接或 None
+    """
+    logger = logging.getLogger(__name__)
+
+    session = requests.Session()
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+
+    try:
+        # 获取详情页
+        resp = session.get(detail_url, headers=headers, timeout=30)
+
+        # 绕过验证码
+        if 'captcha' in resp.text.lower():
+            resp = session.post(
+                'https://miobt.com/addon.php?r=document/view&page=visitor-test',
+                data={'visitor_test': 'human'},
+                headers={**headers, 'Referer': detail_url},
+                timeout=30
+            )
+
+        # 提取 magnet 链接
+        magnets = re.findall(
+            r'magnet:\?xt=urn:btih:[a-zA-Z0-9]+[^"\'<>\s]*',
+            resp.text
+        )
+
+        if magnets:
+            return magnets[0]
+
+    except Exception as e:
+        logger.error(f"获取 magnet 链接失败: {e}")
+
+    return None
+
+
+def download_with_libtorrent(
+    magnet_link: str,
+    save_path: Optional[Path] = None,
+    timeout: int = DOWNLOAD_TIMEOUT
+) -> bool:
+    """
+    使用 libtorrent 下载 magnet 链接
+
+    Args:
+        magnet_link: magnet 链接
+        save_path: 保存路径
+        timeout: 超时时间（秒）
+
+    Returns:
+        是否成功
+    """
+    logger = logging.getLogger(__name__)
+
+    if not HAS_LIBTORRENT:
+        logger.error("libtorrent 未安装，无法下载")
+        logger.info("请运行: uv add libtorrent")
+        return False
+
+    if save_path is None:
+        save_path = DOWNLOAD_DIR
+
+    save_path.mkdir(parents=True, exist_ok=True)
+
+    try:
+        # 创建 session
+        ses = lt.session()
+        ses.listen_on(*DOWNLOAD_PORTS)
+
+        # 添加 tracker（提高下载速度）
+        trackers = [
+            'udp://tracker.opentrackr.org:1337/announce',
+            'udp://open.stealth.si:80/announce',
+            'udp://tracker.torrent.eu.org:451/announce',
+            'udp://tracker.bittor.pw:1337/announce',
+            'udp://public.popcorn-tracker.org:6969/announce',
+            'http://open.acgtracker.com:1096/announce',
+        ]
+
+        # 解析 magnet 链接
+        params = lt.parse_magnet_uri(magnet_link)
+        params.save_path = str(save_path)
+
+        # 添加下载
+        handle = ses.add_torrent(params)
+
+        logger.info(f"正在获取元数据...")
+        logger.info(f"保存路径: {save_path}")
+
+        # 等待获取元数据
+        start_time = time.time()
+        while not handle.status().has_metadata:
+            time.sleep(1)
+            if time.time() - start_time > 60:
+                logger.error("获取元数据超时")
+                return False
+
+        # 获取种子信息
+        torrent_info = handle.get_torrent_info()
+        name = torrent_info.name()
+        total_size = torrent_info.total_size()
+
+        logger.info(f"开始下载: {name}")
+        logger.info(f"总大小: {total_size / (1024*1024):.1f} MB")
+
+        # 等待下载完成
+        start_time = time.time()
+        while True:
+            status = handle.status()
+
+            # 计算进度
+            progress = status.progress * 100
+            download_rate = status.download_rate / 1024  # KB/s
+            upload_rate = status.upload_rate / 1024
+
+            # 每 5 秒输出一次进度
+            if int(time.time()) % 5 == 0:
+                logger.info(
+                    f"进度: {progress:.1f}% | "
+                    f"下载: {download_rate:.1f} KB/s | "
+                    f"上传: {upload_rate:.1f} KB/s | "
+                    f"节点: {status.num_peers}"
+                )
+
+            # 检查是否完成
+            if status.is_finished:
+                logger.info(f"✓ 下载完成: {name}")
+                logger.info(f"保存位置: {save_path / name}")
+                return True
+
+            # 检查超时
+            if time.time() - start_time > timeout:
+                logger.warning(f"下载超时，当前进度: {progress:.1f}%")
+                logger.info(f"可以稍后继续下载，文件位于: {save_path}")
+                return False
+
+            time.sleep(1)
+
+    except Exception as e:
+        logger.error(f"下载失败: {e}")
+        return False
+
+
+def download_from_json(
+    json_file: Path,
+    index: int = 0,
+    save_path: Optional[Path] = None
+) -> bool:
+    """
+    从 JSON 文件下载指定索引的资源
+
+    Args:
+        json_file: JSON 数据文件
+        index: 资源索引（从 0 开始）
+        save_path: 保存路径
+
+    Returns:
+        是否成功
+    """
+    logger = logging.getLogger(__name__)
+
+    if not json_file.exists():
+        logger.error(f"文件不存在: {json_file}")
+        return False
+
+    with json_file.open('r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    items = data.get('data', [])
+    if not items:
+        logger.error("JSON 文件中没有数据")
+        return False
+
+    if index >= len(items):
+        logger.error(f"索引 {index} 超出范围 (共 {len(items)} 条)")
+        return False
+
+    item = items[index]
+    logger.info(f"选择: {item['title']}")
+    logger.info(f"大小: {item['size']}")
+    logger.info(f"发布时间: {item['publish_time']}")
+
+    # 获取详情页链接
+    detail_url = item.get('download_link', '')
+    if not detail_url:
+        logger.error("没有找到详情页链接")
+        return False
+
+    logger.info(f"正在获取 magnet 链接...")
+    magnet_link = get_magnet_link(detail_url)
+
+    if not magnet_link:
+        logger.error("无法获取 magnet 链接")
+        return False
+
+    logger.info(f"Magnet: {magnet_link[:60]}...")
+
+    # 开始下载
+    return download_with_libtorrent(magnet_link, save_path)
+
+
 def main(
     test_mode: bool = False,
     cookies: Optional[dict] = None,
@@ -390,7 +615,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="miobt.com 动漫资源爬虫",
+        description="miobt.com 动漫资源爬虫 - 支持搜索和下载",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
@@ -399,6 +624,15 @@ if __name__ == "__main__":
 
   # 搜索动漫
   python main.py --search "海贼王"
+
+  # 下载搜索结果的第一条
+  python main.py --search "JOJO" --download
+
+  # 下载搜索结果的第三条（索引从0开始）
+  python main.py --search "海贼王" --download --index 2
+
+  # 从已有的 JSON 文件下载
+  python main.py --download --file output/search_海贼王.json --index 0
 
   # 测试模式
   python main.py --test
@@ -415,12 +649,37 @@ if __name__ == "__main__":
         help="搜索关键词，例如: '海贼王', '葬送的芙莉莲'"
     )
     parser.add_argument(
+        "--download", "-d",
+        action="store_true",
+        help="下载资源（需要 libtorrent）"
+    )
+    parser.add_argument(
+        "--index", "-i",
+        type=int,
+        default=0,
+        help="下载资源的索引（从0开始，默认第一条）"
+    )
+    parser.add_argument(
+        "--file", "-f",
+        type=str,
+        help="从 JSON 文件读取数据并下载"
+    )
+    parser.add_argument(
+        "--output", "-o",
+        type=str,
+        help="下载保存路径（默认: downloads/）"
+    )
+    parser.add_argument(
         "--cookies",
         type=str,
         help="Cookies 字符串，格式: 'name1=value1; name2=value2'"
     )
 
     args = parser.parse_args()
+
+    # 设置日志
+    setup_logging()
+    logger = logging.getLogger(__name__)
 
     # 解析 cookies
     cookies_dict = None
@@ -431,4 +690,63 @@ if __name__ == "__main__":
                 name, value = cookie.strip().split("=", 1)
                 cookies_dict[name] = value
 
+    # 解析保存路径
+    save_path = Path(args.output) if args.output else DOWNLOAD_DIR
+
+    # 下载模式
+    if args.download:
+        if args.file:
+            # 从 JSON 文件下载
+            json_file = Path(args.file)
+            success = download_from_json(json_file, args.index, save_path)
+            sys.exit(0 if success else 1)
+        elif args.search:
+            # 先搜索再下载
+            logger.info(f"搜索关键词: {args.search}")
+            encoded_keyword = urllib.parse.quote(args.search)
+            target_url = f"https://miobt.com/search.php?keyword={encoded_keyword}"
+
+            page = fetch_with_retry(target_url, cookies=cookies_dict)
+            data = parse_anime_data(page)
+
+            if not data:
+                logger.error("未找到任何资源")
+                sys.exit(1)
+
+            # 保存搜索结果
+            safe_keyword = "".join(c if c.isalnum() or c in ('-', '_') else '_' for c in args.search)
+            json_file = OUTPUT_DIR / f"search_{safe_keyword}.json"
+            result = create_crawl_result(data, datetime.now().isoformat())
+            save_to_json(result, json_file)
+
+            # 显示搜索结果
+            logger.info(f"找到 {len(data)} 条结果:")
+            for i, item in enumerate(data[:10]):
+                logger.info(f"  [{i}] {item['title'][:50]}... ({item['size']})")
+
+            # 下载指定索引
+            if args.index >= len(data):
+                logger.error(f"索引 {args.index} 超出范围")
+                sys.exit(1)
+
+            success = download_from_json(json_file, args.index, save_path)
+            sys.exit(0 if success else 1)
+        else:
+            # 下载首页最新资源
+            page = fetch_with_retry(TARGET_URL, cookies=cookies_dict)
+            data = parse_anime_data(page)
+
+            if not data:
+                logger.error("未找到任何资源")
+                sys.exit(1)
+
+            # 显示资源列表
+            logger.info(f"首页最新 {len(data)} 条资源:")
+            for i, item in enumerate(data[:10]):
+                logger.info(f"  [{i}] {item['title'][:50]}... ({item['size']})")
+
+            success = download_from_json(OUTPUT_FILE, args.index, save_path)
+            sys.exit(0 if success else 1)
+
+    # 正常抓取模式
     main(test_mode=args.test, cookies=cookies_dict, search_keyword=args.search)
