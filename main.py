@@ -9,7 +9,7 @@ import logging
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from scrapling import Fetcher
 
@@ -18,6 +18,9 @@ from scrapling import Fetcher
 TARGET_URL = "https://miobt.com/"
 OUTPUT_DIR = Path("output")
 OUTPUT_FILE = OUTPUT_DIR / "anime_data.json"
+
+# 测试用备用网站（无验证码）
+TEST_URL = "https://books.toscrape.com/"
 
 # 请求配置
 REQUEST_DELAY = 2.0  # 基础延迟（秒）
@@ -90,13 +93,18 @@ def save_to_json(data: CrawlResult, filepath: Path) -> None:
     logger.info(f"数据已保存到 {filepath}")
 
 
-def fetch_with_retry(url: str, max_retries: int = MAX_RETRIES) -> Any:
+def fetch_with_retry(
+    url: str,
+    max_retries: int = MAX_RETRIES,
+    cookies: Optional[dict] = None
+) -> Any:
     """
     使用 Scrapling 获取网页内容，支持重试机制
 
     Args:
         url: 目标网址
         max_retries: 最大重试次数
+        cookies: 可选的 cookies 字典
 
     Returns:
         Scrapling Page 对象
@@ -112,7 +120,11 @@ def fetch_with_retry(url: str, max_retries: int = MAX_RETRIES) -> Any:
             logger.info(f"尝试获取网页 (第 {attempt + 1} 次)...")
             time.sleep(REQUEST_DELAY)  # 请求延迟
 
-            page = fetcher.get(url)
+            # 支持 cookies
+            if cookies:
+                page = fetcher.get(url, cookies=cookies)
+            else:
+                page = fetcher.get(url)
             logger.info("成功获取网页内容")
             return page
 
@@ -210,32 +222,116 @@ def parse_anime_data(page: Any) -> list[AnimeData]:
     return anime_list
 
 
-def main() -> None:
-    """主函数 - 整合所有功能"""
+def parse_books_data(page: Any) -> list[AnimeData]:
+    """
+    解析测试网站（books.toscrape.com）的书籍数据
+    用于测试爬虫功能
+
+    Args:
+        page: Scrapling Page 对象
+
+    Returns:
+        书籍数据列表
+    """
+    logger = logging.getLogger(__name__)
+    books_list = []
+
+    try:
+        # 查找所有书籍条目
+        articles = page.css("article.product_pod")
+        logger.info(f"找到 {len(articles)} 本书籍")
+
+        for article in articles:
+            try:
+                # 提取标题
+                title_elems = article.css("h3 > a")
+                if not title_elems:
+                    continue
+                title_elem = title_elems[0]
+
+                title = title_elem.attrib.get("title") or title_elem.text.strip()
+                if not title:
+                    continue
+
+                # 提取价格
+                price_elems = article.css("p.price_color")
+                price = price_elems[0].text.strip() if price_elems else "未知"
+
+                # 提取评分
+                rating_elems = article.css("p.star-rating")
+                rating = ""
+                if rating_elems:
+                    classes = rating_elems[0].attrib.get("class") or ""
+                    for cls in classes.split():
+                        if cls != "star-rating":
+                            rating = cls
+                            break
+
+                book_entry = create_anime_entry(
+                    title=title,
+                    download_link=page.url,
+                    size=price,
+                    publish_time=f"评分: {rating}",
+                    seeders=0,
+                    leechers=0
+                )
+
+                books_list.append(book_entry)
+
+            except Exception as e:
+                logger.warning(f"解析书籍失败，跳过: {e}")
+                continue
+
+        logger.info(f"成功解析 {len(books_list)} 本书籍")
+
+    except Exception as e:
+        logger.error(f"解析HTML失败: {e}")
+
+    return books_list
+
+
+def main(test_mode: bool = False, cookies: Optional[dict] = None) -> None:
+    """
+    主函数 - 整合所有功能
+
+    Args:
+        test_mode: 是否使用测试网站（无验证码）
+        cookies: 可选的 cookies 字典
+    """
     setup_logging()
     logger = logging.getLogger(__name__)
 
-    try:
+    # 根据模式选择目标URL和解析函数
+    if test_mode:
+        target_url = TEST_URL
+        parse_func = parse_books_data
+        output_file = OUTPUT_DIR / "test_books_data.json"
+        logger.info("使用测试模式，抓取 books.toscrape.com...")
+    else:
+        target_url = TARGET_URL
+        parse_func = parse_anime_data
+        output_file = OUTPUT_FILE
         logger.info("开始抓取 miobt.com 首页数据...")
 
+    try:
         # 1. 获取网页内容
-        page = fetch_with_retry(TARGET_URL)
+        page = fetch_with_retry(target_url, cookies=cookies)
 
         # 2. 解析数据
-        anime_data = parse_anime_data(page)
+        data = parse_func(page)
 
-        if not anime_data:
+        if not data:
             logger.warning("未解析到任何数据")
             return
 
         # 3. 创建结果对象
         crawl_time = datetime.now().isoformat()
-        result = create_crawl_result(anime_data, crawl_time)
+        result = create_crawl_result(data, crawl_time)
 
         # 4. 保存数据
-        save_to_json(result, OUTPUT_FILE)
+        save_to_json(result, output_file)
 
-        logger.info(f"抓取完成！共获取 {len(anime_data)} 条数据")
+        logger.info(f"抓取完成！共获取 {len(data)} 条数据")
 
     except Exception as e:
         logger.error(f"抓取失败: {e}")
@@ -243,4 +339,29 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="miobt.com 动漫资源爬虫")
+    parser.add_argument(
+        "--test",
+        action="store_true",
+        help="使用测试模式（抓取 books.toscrape.com，无验证码）"
+    )
+    parser.add_argument(
+        "--cookies",
+        type=str,
+        help="Cookies 字符串，格式: 'name1=value1; name2=value2'"
+    )
+
+    args = parser.parse_args()
+
+    # 解析 cookies
+    cookies_dict = None
+    if args.cookies:
+        cookies_dict = {}
+        for cookie in args.cookies.split(";"):
+            if "=" in cookie:
+                name, value = cookie.strip().split("=", 1)
+                cookies_dict[name] = value
+
+    main(test_mode=args.test, cookies=cookies_dict)
