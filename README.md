@@ -1,4 +1,4 @@
-# miobt.com 动漫资源爬虫
+# AniCatch - 动漫资源爬虫
 
 一个 Python 爬虫项目，抓取 miobt.com 首页动漫资源信息，支持搜索和下载功能。
 
@@ -27,8 +27,8 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/isongxw/anime_scrapy.git
-cd anime_scrapy
+git clone https://github.com/isongxw/anicatch.git
+cd anicatch
 
 # 使用 uv 安装依赖
 uv sync
@@ -43,26 +43,26 @@ uv add libtorrent
 
 ```bash
 # 抓取首页
-uv run anime_scrapy
+uv run anicatch
 
 # 搜索动漫
-uv run anime_scrapy --search "海贼王"
-uv run anime_scrapy -s "JOJO的奇妙冒险"
+uv run anicatch --search "海贼王"
+uv run anicatch -s "JOJO的奇妙冒险"
 
 # 下载搜索结果的第一条
-uv run anime_scrapy --search "JOJO" --download
+uv run anicatch --search "JOJO" --download
 
 # 下载第三条结果（索引从0开始）
-uv run anime_scrapy --search "海贼王" --download --index 2
+uv run anicatch --search "海贼王" --download --index 2
 
 # 从已保存的 JSON 文件下载
-uv run anime_scrapy --download --file output/search_JOJO.json --index 0
+uv run anicatch --download --file output/search_JOJO.json --index 0
 
 # 指定下载路径
-uv run anime_scrapy --search "JOJO" --download --output ~/Downloads
+uv run anicatch --search "JOJO" --download --output ~/Downloads
 
 # 测试模式
-uv run anime_scrapy --test
+uv run anicatch --test
 ```
 
 ### 命令行参数
@@ -109,7 +109,7 @@ uv run anime_scrapy --test
 ## 项目结构
 
 ```
-src/anime_scrapy/
+src/anicatch/
 ├── __init__.py      # 包入口
 ├── __main__.py      # CLI 入口
 ├── config.py        # 配置常量
@@ -124,4 +124,4 @@ src/anime_scrapy/
 - 请遵守网站的使用条款
 - 适当设置请求延迟避免被封禁
 - 下载功能需要安装 libtorrent
-- 网站结构变化可能导致解析失败
+- 站结构变化可能导致解析失败

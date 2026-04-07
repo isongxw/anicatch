@@ -1,7 +1,7 @@
 [project]
-name = "anime_scrapy"
+name = "anicatch"
 version = "0.1.0"
-description = "miobt.com 动漫资源爬虫"
+description = "AniCatch - miobt.com 动漫资源爬虫"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -15,11 +15,11 @@ dependencies = [
 ]
 
 [project.scripts]
-anime_scrapy = "anime_scrapy.__main__:main_cli"
+anicatch = "anicatch.__main__:main_cli"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/anime_scrapy"]
+packages = ["src/anicatch"]
