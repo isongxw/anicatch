@@ -1,0 +1,13 @@
+[project]
+name = "anime-scrapy"
+version = "0.1.0"
+description = "miobt.com 动漫资源爬虫"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "scrapling>=0.2.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
