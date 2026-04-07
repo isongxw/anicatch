@@ -1,6 +1,6 @@
 # miobt.com 动漫资源爬虫
 
-一个简单的 Python 爬虫项目，使用 Scrapling 库抓取 miobt.com 首页动漫资源信息，支持搜索和下载功能。
+一个 Python 爬虫项目，抓取 miobt.com 首页动漫资源信息，支持搜索和下载功能。
 
 ## 功能特性
 
@@ -10,18 +10,31 @@
 - 自动重试机制（最多3次）
 - 请求延迟防止被封
 - JSON 格式输出
-- 清晰的日志输出
 - 支持 libtorrent 下载 magnet 链接
 - 测试模式（使用无验证码网站测试）
+
+## 技术栈
+
+- Python 3.10+
+- Scrapling (网页抓取库)
+- curl_cffi (HTTP 请求)
+- Pydantic (数据验证)
+- Loguru (日志)
+- libtorrent (BT 下载)
+- uv (包管理器)
 
 ## 安装
 
 ```bash
+# 克隆项目
+git clone https://github.com/isongxw/anime_scrapy.git
+cd anime_scrapy
+
 # 使用 uv 安装依赖
 uv sync
 
 # 安装 libtorrent（下载功能需要）
-uv pip install libtorrent
+uv add libtorrent
 ```
 
 ## 使用
@@ -30,26 +43,26 @@ uv pip install libtorrent
 
 ```bash
 # 抓取首页
-uv run main.py
+uv run anime_scrapy
 
 # 搜索动漫
-uv run main.py --search "海贼王"
-uv run main.py -s "JOJO的奇妙冒险"
+uv run anime_scrapy --search "海贼王"
+uv run anime_scrapy -s "JOJO的奇妙冒险"
 
 # 下载搜索结果的第一条
-uv run main.py --search "JOJO" --download
+uv run anime_scrapy --search "JOJO" --download
 
 # 下载第三条结果（索引从0开始）
-uv run main.py --search "海贼王" --download --index 2
+uv run anime_scrapy --search "海贼王" --download --index 2
 
 # 从已保存的 JSON 文件下载
-uv run main.py --download --file output/search_JOJO.json --index 0
+uv run anime_scrapy --download --file output/search_JOJO.json --index 0
 
 # 指定下载路径
-uv run main.py --search "JOJO" --download --output ~/Downloads
+uv run anime_scrapy --search "JOJO" --download --output ~/Downloads
 
 # 测试模式
-uv run main.py --test
+uv run anime_scrapy --test
 ```
 
 ### 命令行参数
@@ -93,21 +106,18 @@ uv run main.py --test
 }
 ```
 
-## 配置
+## 项目结构
 
-可在 `main.py` 中修改以下配置：
-
-- `REQUEST_DELAY`: 请求延迟时间（秒）
-- `MAX_RETRIES`: 最大重试次数
-- `DOWNLOAD_TIMEOUT`: 下载超时（秒）
-
-## 技术栈
-
-- Python 3.10+
-- Scrapling (网页抓取库)
-- curl_cffi (HTTP 请求)
-- libtorrent (BT 下载)
-- uv (包管理器)
+```
+src/anime_scrapy/
+├── __init__.py      # 包入口
+├── __main__.py      # CLI 入口
+├── config.py        # 配置常量
+├── models.py        # Pydantic 数据模型
+├── scraper.py       # 爬取函数
+├── downloader.py    # 下载函数
+└── utils.py         # 工具函数（loguru 日志）
+```
 
 ## 注意事项
 

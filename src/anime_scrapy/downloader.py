@@ -3,17 +3,16 @@
 import re
 import time
 import json
-import logging
 from pathlib import Path
 from typing import Optional
 
 from curl_cffi import requests
+from loguru import logger
 
 from .config import (
     DOWNLOAD_TIMEOUT,
     DOWNLOAD_PORTS,
     DOWNLOAD_DIR,
-    TRACKERS,
 )
 
 # 尝试导入 libtorrent
@@ -34,8 +33,6 @@ def get_magnet_link(detail_url: str) -> Optional[str]:
     Returns:
         magnet 链接或 None
     """
-    logger = logging.getLogger(__name__)
-
     session = requests.Session()
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -84,8 +81,6 @@ def download_with_libtorrent(
     Returns:
         是否成功
     """
-    logger = logging.getLogger(__name__)
-
     if not HAS_LIBTORRENT:
         logger.error("libtorrent 未安装，无法下载")
         logger.info("请运行: uv add libtorrent")
@@ -144,7 +139,7 @@ def download_with_libtorrent(
                 )
 
             if status.is_finished:
-                logger.info(f"下载完成: {name}")
+                logger.success(f"下载完成: {name}")
                 logger.info(f"保存位置: {save_path / name}")
                 return True
 
@@ -176,8 +171,6 @@ def download_from_json(
     Returns:
         是否成功
     """
-    logger = logging.getLogger(__name__)
-
     if not json_file.exists():
         logger.error(f"文件不存在: {json_file}")
         return False

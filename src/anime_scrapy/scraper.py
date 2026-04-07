@@ -2,14 +2,13 @@
 
 import re
 import time
-import logging
 from typing import Any, Optional
 
 from curl_cffi import requests
+from loguru import logger
 from scrapling import Selector
 
 from .config import (
-    TARGET_URL,
     REQUEST_DELAY,
     MAX_RETRIES,
     RETRY_DELAYS,
@@ -36,8 +35,6 @@ def fetch_with_retry(
     Raises:
         Exception: 所有重试失败后抛出异常
     """
-    logger = logging.getLogger(__name__)
-
     session = requests.Session()
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -98,7 +95,6 @@ def parse_anime_data(page: Any) -> list[AnimeItem]:
     Returns:
         动漫数据列表
     """
-    logger = logging.getLogger(__name__)
     anime_list = []
 
     try:
@@ -170,7 +166,6 @@ def parse_books_data(page: Any) -> list[AnimeItem]:
     Returns:
         书籍数据列表
     """
-    logger = logging.getLogger(__name__)
     books_list = []
 
     try:

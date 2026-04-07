@@ -3,8 +3,9 @@
 import sys
 import urllib.parse
 import argparse
-from datetime import datetime
 from pathlib import Path
+
+from loguru import logger
 
 from .config import TARGET_URL, OUTPUT_DIR, DOWNLOAD_DIR, OUTPUT_FILE
 from .models import CrawlResult
@@ -15,9 +16,6 @@ from .utils import setup_logging, save_to_json
 
 def main_cli() -> None:
     """主 CLI 函数"""
-    import logging
-    logger = logging.getLogger(__name__)
-
     parser = argparse.ArgumentParser(
         description="miobt.com 动漫资源爬虫 - 支持搜索和下载",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -119,7 +117,7 @@ def main_cli() -> None:
             )
             json_file = OUTPUT_DIR / f"search_{safe_keyword}.json"
             result = CrawlResult.create(data)
-            save_to_json(result, json_file)
+            save_to_json(result.model_dump(), json_file)
 
             logger.info(f"找到 {len(data)} 条结果:")
             for i, item in enumerate(data[:10]):
@@ -177,9 +175,9 @@ def main_cli() -> None:
             return
 
         result = CrawlResult.create(data)
-        save_to_json(result, output_file)
+        save_to_json(result.model_dump(), output_file)
 
-        logger.info(f"抓取完成！共获取 {len(data)} 条数据")
+        logger.success(f"抓取完成！共获取 {len(data)} 条数据")
 
     except Exception as e:
         logger.error(f"抓取失败: {e}")

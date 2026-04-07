@@ -1,12 +1,12 @@
 """数据模型模块"""
 
-from dataclasses import dataclass, asdict
 from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
+
+from pydantic import BaseModel, Field
 
 
-@dataclass
-class AnimeItem:
+class AnimeItem(BaseModel):
     """动漫资源数据类"""
     title: str
     download_link: str
@@ -14,40 +14,21 @@ class AnimeItem:
     publish_time: str
     category: str = ""
     uploader: str = ""
-    seeders: int = 0
-    leechers: int = 0
-
-    def to_dict(self) -> dict:
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: dict) -> "AnimeItem":
-        return cls(
-            title=data.get("title", ""),
-            download_link=data.get("download_link", ""),
-            size=data.get("size", ""),
-            publish_time=data.get("publish_time", ""),
-            category=data.get("category", ""),
-            uploader=data.get("uploader", ""),
-            seeders=data.get("seeders", 0),
-            leechers=data.get("leechers", 0),
-        )
+    seeders: int = Field(default=0, ge=0)
+    leechers: int = Field(default=0, ge=0)
 
 
-@dataclass
-class CrawlResult:
+class CrawlResult(BaseModel):
     """抓取结果数据类"""
     crawl_time: str
-    total_count: int
+    total_count: int = Field(description="抓取数据总数")
     data: list[dict]
 
     @classmethod
     def create(cls, items: list[AnimeItem]) -> "CrawlResult":
+        """从 AnimeItem 列表创建抓取结果"""
         return cls(
             crawl_time=datetime.now().isoformat(),
             total_count=len(items),
-            data=[item.to_dict() for item in items]
+            data=[item.model_dump() for item in items]
         )
-
-    def to_dict(self) -> dict:
-        return asdict(self)
