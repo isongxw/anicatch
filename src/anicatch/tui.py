@@ -19,6 +19,7 @@ from .seasons import (
 )
 from .scraper import fetch_with_retry
 from .downloader import get_magnet_link, download_with_libtorrent, HAS_LIBTORRENT
+from .config import TARGET_URL
 
 
 class SeasonHeader(Static):
@@ -26,9 +27,6 @@ class SeasonHeader(Static):
 
     season_name = reactive("")
     month_name = reactive("")
-
-    def watch_season_name(self, name: str) -> None:
-        self.update(f"季度: {name} ◀ ▶")
 
     def render(self) -> str:
         month_part = f"月份: {self.month_name} [ ]" if self.month_name else ""
@@ -177,13 +175,14 @@ class AniCatchApp(App):
 
     def on_mount(self) -> None:
         """应用启动时加载当前季度"""
+        self.query_one(DetailView).visible = False
         self.run_worker(self.load_initial_data)
 
     async def load_initial_data(self) -> None:
         """加载初始数据"""
         try:
             # 抓取首页获取季度入口
-            page = fetch_with_retry("https://miobt.com/")
+            page = fetch_with_retry(TARGET_URL)
             self.seasons = parse_seasons_from_page(page)
 
             if not self.seasons:
