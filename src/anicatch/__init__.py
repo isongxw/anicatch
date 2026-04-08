@@ -16,6 +16,7 @@ from .seasons import (
 )
 from .downloader import get_magnet_link, download_with_libtorrent, download_from_json
 from .utils import setup_logging, save_to_json
+from .tui import run_tui
 
 __all__ = [
     'AnimeItem',
@@ -38,4 +39,5 @@ __all__ = [
     'download_from_json',
     'setup_logging',
     'save_to_json',
+    'run_tui',
 ]
