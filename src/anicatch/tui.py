@@ -130,7 +130,7 @@ class AniCatchApp(App):
     }
 
     AnimeListItem:focus {
-        background: $surface-light;
+        background: $surface-lighten-3;
     }
 
     DetailView {
