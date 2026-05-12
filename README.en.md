@@ -10,11 +10,26 @@ Thanks to [miobt.com](https://miobt.com) for providing the anime resource index.
 
 ## Install
 
+### PyPI (recommended)
+
+```bash
+pipx install anicatch        # Recommended: isolated install
+pip install anicatch         # or standard pip
+uv tool install anicatch     # or uv
+```
+
+### Run directly (zero install)
+
+```bash
+uvx anicatch --search "Demon Slayer"
+```
+
+### Dev install
+
 ```bash
 git clone https://github.com/isongxw/anicatch.git
 cd anicatch
 uv sync
-uv add libtorrent  # required for download
 ```
 
 ## Usage
@@ -24,7 +39,7 @@ Two modes available:
 ### TUI Mode (interactive)
 
 ```bash
-uv run anicatch
+anicatch
 ```
 
 - Browse anime by season (navigate with arrow keys, switch months)
@@ -34,12 +49,12 @@ uv run anicatch
 ### CLI Mode (automation / Agent)
 
 ```bash
-uv run anicatch --search "Demon Slayer"                          # Search
-uv run anicatch --search "Demon Slayer" --download --index 0      # Search and download
-uv run anicatch --download "https://miobt.com/show-xxx.html"      # Download by URL
-uv run anicatch --seasons                                        # List all seasons
-uv run anicatch --season                                         # Browse current season
-uv run anicatch --season 1 --download --index 0                   # Download from season
+anicatch --search "Demon Slayer"                               # Search
+anicatch --search "Demon Slayer" --download --index 0           # Search and download
+anicatch --download "https://miobt.com/show-xxx.html"           # Download by URL
+anicatch --seasons                                             # List all seasons
+anicatch --season                                              # Browse current season
+anicatch --season 1 --download --index 0                        # Download from season
 ```
 
 ## Output

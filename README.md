@@ -10,11 +10,26 @@
 
 ## 安装
 
+### PyPI（推荐）
+
+```bash
+pipx install anicatch        # 推荐：隔离安装
+pip install anicatch         # 或标准 pip
+uv tool install anicatch     # 或 uv
+```
+
+### 直接运行（零安装）
+
+```bash
+uvx anicatch --search "JOJO"
+```
+
+### 开发安装
+
 ```bash
 git clone https://github.com/isongxw/anicatch.git
 cd anicatch
 uv sync
-uv add libtorrent  # 下载功能需要
 ```
 
 ## 使用
@@ -24,7 +39,7 @@ uv add libtorrent  # 下载功能需要
 ### TUI 模式（人机交互）
 
 ```bash
-uv run anicatch
+anicatch
 ```
 
 - 浏览季度新番（左右切换季度、月份）
@@ -34,12 +49,12 @@ uv run anicatch
 ### CLI 模式（自动化 / Agent 调用）
 
 ```bash
-uv run anicatch --search "JOJO"                           # 搜索
-uv run anicatch --search "JOJO" --download --index 0       # 搜索并下载
-uv run anicatch --download "https://miobt.com/show-xxx.html"  # 直接下载
-uv run anicatch --seasons                                 # 列出所有季度
-uv run anicatch --season                                  # 浏览当前季度
-uv run anicatch --season 1 --download --index 0            # 下载指定季度番剧
+anicatch --search "JOJO"                                    # 搜索
+anicatch --search "JOJO" --download --index 0                # 搜索并下载
+anicatch --download "https://miobt.com/show-xxx.html"        # 直接下载
+anicatch --seasons                                          # 列出所有季度
+anicatch --season                                           # 浏览当前季度
+anicatch --season 1 --download --index 0                     # 下载指定季度番剧
 ```
 
 ## 输出
