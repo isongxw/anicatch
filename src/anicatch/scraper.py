@@ -1,5 +1,6 @@
 """爬虫模块"""
 
+import re
 import time
 from typing import Any, Optional
 from urllib.parse import quote
@@ -119,7 +120,7 @@ def parse_anime_data(page: Any) -> list[AnimeItem]:
                 title_link = tds[2].css("a")
                 if not title_link:
                     continue
-                title = title_link[0].text.strip()
+                title = re.sub(r"\s+", " ", str(title_link[0].get_all_text())).strip()
                 href = title_link[0].attrib.get("href", "")
 
                 if href and not href.startswith("http"):

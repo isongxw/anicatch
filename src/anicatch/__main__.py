@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+from pathlib import Path
 
 from loguru import logger
 
@@ -30,6 +31,13 @@ def main_cli() -> None:
         help="下载: 直接指定详情页 URL, 或配合 --search/--season 使用",
     )
     parser.add_argument("--index", type=int, default=0, help="下载索引 (默认 0)")
+    parser.add_argument(
+        "-o",
+        "--output-dir",
+        type=str,
+        metavar="DIR",
+        help="下载保存目录",
+    )
     parser.add_argument("--seasons", action="store_true", help="列出所有季度")
     parser.add_argument(
         "--season",
@@ -46,23 +54,25 @@ def main_cli() -> None:
 
 def _dispatch(args: argparse.Namespace) -> None:
     """统一分发命令"""
+    save_path = Path(args.output_dir) if args.output_dir else None
+
     # 直接指定 URL 下载
     if args.download and args.download != "flag":
-        _run_download_url(args.download)
+        _run_download_url(args.download, save_path)
         return
 
     do_download = args.download == "flag"
 
     # 搜索
     if args.search:
-        _run_search_mode(args.search, do_download, args.index)
+        _run_search_mode(args.search, do_download, args.index, save_path)
         return
 
     # 季度
     if args.seasons:
         _run_seasons_mode()
     elif args.season is not None:
-        _run_season_mode(args.season, do_download, args.index)
+        _run_season_mode(args.season, do_download, args.index, save_path)
     elif do_download:
         logger.error("--download 需要配合 --search / --season 或直接指定 URL")
         sys.exit(1)
@@ -70,7 +80,7 @@ def _dispatch(args: argparse.Namespace) -> None:
         run_tui()
 
 
-def _run_download_url(url: str) -> None:
+def _run_download_url(url: str, save_path: Path | None = None) -> None:
     """直接从详情页 URL 下载"""
     setup_logging()
     logger.info(f"获取 magnet: {url}")
@@ -81,7 +91,7 @@ def _run_download_url(url: str) -> None:
         sys.exit(1)
 
     logger.info(f"Magnet: {magnet[:60]}...")
-    success = download_with_libtorrent(magnet)
+    success = download_with_libtorrent(magnet, save_path=save_path)
     if not success:
         sys.exit(1)
 
@@ -112,7 +122,9 @@ def _run_seasons_mode() -> None:
         print()
 
 
-def _run_season_mode(season_index: int, download: bool, index: int) -> None:
+def _run_season_mode(
+    season_index: int, download: bool, index: int, save_path: Path | None = None
+) -> None:
     """浏览季度番剧"""
     setup_logging()
     logger.info("获取季度列表...")
@@ -149,12 +161,14 @@ def _run_season_mode(season_index: int, download: bool, index: int) -> None:
         result = CrawlResult.create(items)
         save_to_json(result.model_dump(), output_file)
         logger.info(f"开始下载索引 {index} 的资源...")
-        success = download_from_json(output_file, index)
+        success = download_from_json(output_file, index, save_path=save_path)
         if not success:
             sys.exit(1)
 
 
-def _run_search_mode(keyword: str, download: bool, index: int) -> None:
+def _run_search_mode(
+    keyword: str, download: bool, index: int, save_path: Path | None = None
+) -> None:
     """搜索模式"""
     setup_logging()
     logger.info(f"搜索: {keyword}")
@@ -177,7 +191,7 @@ def _run_search_mode(keyword: str, download: bool, index: int) -> None:
 
     if download:
         logger.info(f"开始下载索引 {index} 的资源...")
-        success = download_from_json(output_file, index)
+        success = download_from_json(output_file, index, save_path=save_path)
         if not success:
             sys.exit(1)
 
