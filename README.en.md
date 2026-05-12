@@ -34,9 +34,12 @@ uv run anicatch
 ### CLI Mode (automation / Agent)
 
 ```bash
-uv run anicatch --search "Demon Slayer"                   # Search, results printed to stdout
-uv run anicatch --search "Demon Slayer" --download --index 0 # Search and download
-uv run anicatch --url "https://miobt.com/show-xxx.html"     # Download directly from detail page
+uv run anicatch --search "Demon Slayer"                          # Search
+uv run anicatch --search "Demon Slayer" --download --index 0      # Search and download
+uv run anicatch --download "https://miobt.com/show-xxx.html"      # Download by URL
+uv run anicatch --seasons                                        # List all seasons
+uv run anicatch --season                                         # Browse current season
+uv run anicatch --season 1 --download --index 0                   # Download from season
 ```
 
 ## Output
