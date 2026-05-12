@@ -3,11 +3,10 @@
 from .models import AnimeItem, CrawlResult, SeasonInfo, AnimeDetail
 from .config import (
     TARGET_URL,
-    TEST_URL,
     OUTPUT_DIR,
     DOWNLOAD_DIR,
 )
-from .scraper import fetch_with_retry, parse_anime_data, parse_books_data, search_anime
+from .scraper import fetch_with_retry, parse_anime_data, search_anime
 from .seasons import (
     get_current_season,
     parse_seasons_from_page,
@@ -24,12 +23,10 @@ __all__ = [
     "SeasonInfo",
     "AnimeDetail",
     "TARGET_URL",
-    "TEST_URL",
     "OUTPUT_DIR",
     "DOWNLOAD_DIR",
     "fetch_with_retry",
     "parse_anime_data",
-    "parse_books_data",
     "search_anime",
     "get_current_season",
     "parse_seasons_from_page",

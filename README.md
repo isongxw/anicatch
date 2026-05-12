@@ -19,30 +19,36 @@ uv add libtorrent  # 下载功能需要
 
 ## 使用
 
+提供两种模式：
+
+### TUI 模式（人机交互）
+
 ```bash
-# 启动 TUI 浏览模式
 uv run anicatch
+```
 
-# 搜索
-uv run anicatch --search "JOJO"
+- 浏览季度新番（左右切换季度、月份）
+- 键盘导航查看番剧详情和 magnet 链接
+- 支持下载选中的资源
 
-# 搜索并下载第一条结果
-uv run anicatch --search "JOJO" --download --index 0
+### CLI 模式（自动化 / Agent 调用）
 
-# 测试模式
-uv run anicatch --test
+```bash
+uv run anicatch --search "JOJO"                    # 搜索，结果直接打印到终端
+uv run anicatch --search "JOJO" --download --index 0  # 搜索并下载
+uv run anicatch --url "https://miobt.com/show-xxx.html"  # 直接从详情页下载
 ```
 
 ## 输出
 
-- 搜索/抓取结果：`output/` 目录
+- 搜索结果：打印到 stdout，同时保存 `output/` 目录
 - 下载文件：`downloads/` 目录
 
 ## 项目结构
 
 ```
 src/anicatch/
-├── __main__.py      # CLI 入口
+├── __main__.py      # CLI/TUI 入口
 ├── tui.py           # TUI 界面
 ├── scraper.py       # 爬取与解析
 ├── downloader.py    # BT 下载
@@ -51,4 +57,3 @@ src/anicatch/
 ├── config.py        # 配置常量
 └── utils.py         # 工具函数
 ```
-

@@ -5,10 +5,10 @@ import sys
 
 from loguru import logger
 
-from .config import OUTPUT_DIR, TEST_URL
+from .config import OUTPUT_DIR
 from .downloader import download_from_json, download_with_libtorrent, get_magnet_link
 from .models import CrawlResult
-from .scraper import fetch_with_retry, parse_books_data, search_anime
+from .scraper import search_anime
 from .tui import run_tui
 from .utils import save_to_json, setup_logging
 
@@ -16,9 +16,6 @@ from .utils import save_to_json, setup_logging
 def main_cli() -> None:
     """主入口函数"""
     parser = argparse.ArgumentParser(description="AniCatch - 动漫资源爬虫")
-    parser.add_argument(
-        "--test", action="store_true", help="测试模式 (books.toscrape.com)"
-    )
     parser.add_argument("--search", type=str, metavar="KEYWORD", help="搜索关键词")
     parser.add_argument("--download", action="store_true", help="下载模式")
     parser.add_argument("--index", type=int, default=0, help="下载索引 (默认 0)")
@@ -26,9 +23,7 @@ def main_cli() -> None:
 
     args = parser.parse_args()
 
-    if args.test:
-        _run_test_mode()
-    elif args.url:
+    if args.url:
         _run_download_mode(args.url)
     elif args.search:
         _run_search_mode(args.search, args.download, args.index)
@@ -37,20 +32,6 @@ def main_cli() -> None:
         sys.exit(1)
     else:
         run_tui()
-
-
-def _run_test_mode() -> None:
-    """测试模式"""
-    setup_logging()
-    logger.info("测试模式启动...")
-
-    page = fetch_with_retry(TEST_URL)
-    items = parse_books_data(page)
-    result = CrawlResult.create(items)
-
-    output_file = OUTPUT_DIR / "test_data.json"
-    save_to_json(result.model_dump(), output_file)
-    logger.info(f"测试完成，共抓取 {len(items)} 条数据")
 
 
 def _run_download_mode(url: str) -> None:

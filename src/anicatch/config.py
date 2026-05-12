@@ -10,7 +10,6 @@ OUTPUT_FILE = OUTPUT_DIR / "anime_data.json"
 
 # URL 配置
 TARGET_URL = "https://miobt.com/"
-TEST_URL = "https://books.toscrape.com/"
 
 # 请求配置
 REQUEST_DELAY = 2.0  # 基础延迟（秒）

@@ -19,30 +19,36 @@ uv add libtorrent  # required for download
 
 ## Usage
 
+Two modes available:
+
+### TUI Mode (interactive)
+
 ```bash
-# Launch TUI browser
 uv run anicatch
+```
 
-# Search
-uv run anicatch --search "Demon Slayer"
+- Browse anime by season (navigate with arrow keys, switch months)
+- Keyboard-driven detail view with magnet links
+- Download selected resources
 
-# Search and download the first result
-uv run anicatch --search "Demon Slayer" --download --index 0
+### CLI Mode (automation / Agent)
 
-# Test mode
-uv run anicatch --test
+```bash
+uv run anicatch --search "Demon Slayer"                   # Search, results printed to stdout
+uv run anicatch --search "Demon Slayer" --download --index 0 # Search and download
+uv run anicatch --url "https://miobt.com/show-xxx.html"     # Download directly from detail page
 ```
 
 ## Output
 
-- Search/scrape results: `output/` directory
-- Downloaded files: `downloads/` directory
+- Search results: printed to stdout, also saved to `output/`
+- Downloads: `downloads/` directory
 
 ## Project Structure
 
 ```
 src/anicatch/
-├── __main__.py      # CLI entry
+├── __main__.py      # CLI/TUI entry
 ├── tui.py           # TUI interface
 ├── scraper.py       # Scraping & parsing
 ├── downloader.py    # BT download
@@ -51,4 +57,3 @@ src/anicatch/
 ├── config.py        # Configuration
 └── utils.py         # Utilities
 ```
-
