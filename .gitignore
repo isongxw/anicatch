@@ -48,3 +48,6 @@ Thumbs.db
 # Claude Code (root only)
 /CLAUDE.md
 /AGENTS.md
+
+# ClawHub
+.clawhub/
