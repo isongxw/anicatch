@@ -8,7 +8,7 @@ from scrapling import Selector
 
 from .config import TARGET_URL
 from .models import SeasonInfo, AnimeItem
-from .scraper import fetch_with_retry, parse_anime_data
+from .scraper import fetch_with_retry
 
 
 def get_current_season() -> tuple[int, str]:
@@ -123,6 +123,64 @@ def parse_seasons_from_page(page: Selector) -> list[SeasonInfo]:
     return seasons
 
 
+def parse_season_anime(page: Selector) -> list[AnimeItem]:
+    """
+    从季度番组表页面解析番剧列表
+
+    季度页面使用 #bgm-table > dl 日别表格结构，
+    每个 dl 代表一周中的一天，dd 元素是番剧链接。
+
+    Args:
+        page: Scrapling Selector 对象
+
+    Returns:
+        番剧列表
+    """
+    anime_list = []
+
+    try:
+        bgm_table = page.css("#bgm-table")
+        if not bgm_table:
+            logger.warning("未找到番组表格 #bgm-table")
+            return anime_list
+
+        dls = bgm_table[0].css("dl")
+        for dl in dls:
+            dt = dl.css("dt")
+            day_label = dt[0].text.strip() if dt else ""
+
+            dds = dl.css("dd")
+            for dd in dds:
+                links = dd.css("a")
+                if not links:
+                    continue
+                title = links[0].text.strip()
+                href = links[0].attrib.get("href", "")
+
+                # 跳过导航占位链接 (只包含箭头标记的)
+                if not title or title in ("1月新番→", "←1月新番"):
+                    continue
+
+                if not href.startswith("http"):
+                    href = TARGET_URL.rstrip("/") + "/" + href.lstrip("/")
+
+                anime_list.append(
+                    AnimeItem(
+                        title=title,
+                        download_link=href,
+                        size="",
+                        publish_time=day_label,
+                    )
+                )
+
+        logger.info(f"从季度表解析 {len(anime_list)} 条番剧")
+
+    except Exception as e:
+        logger.error(f"解析季度番剧失败: {e}")
+
+    return anime_list
+
+
 def fetch_season_anime(season_url: str) -> list[AnimeItem]:
     """
     抓取指定季度的番剧列表
@@ -135,7 +193,7 @@ def fetch_season_anime(season_url: str) -> list[AnimeItem]:
     """
     try:
         page = fetch_with_retry(season_url)
-        return parse_anime_data(page)
+        return parse_season_anime(page)
     except Exception as e:
         logger.error(f"抓取季度番剧失败: {e}")
         return []
