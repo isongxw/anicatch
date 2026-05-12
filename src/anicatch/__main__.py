@@ -6,7 +6,7 @@ import sys
 from loguru import logger
 
 from .config import OUTPUT_DIR, TEST_URL
-from .downloader import download_from_json
+from .downloader import download_from_json, download_with_libtorrent, get_magnet_link
 from .models import CrawlResult
 from .scraper import fetch_with_retry, parse_books_data, search_anime
 from .tui import run_tui
@@ -22,15 +22,18 @@ def main_cli() -> None:
     parser.add_argument("--search", type=str, metavar="KEYWORD", help="搜索关键词")
     parser.add_argument("--download", action="store_true", help="下载模式")
     parser.add_argument("--index", type=int, default=0, help="下载索引 (默认 0)")
+    parser.add_argument("--url", type=str, metavar="URL", help="直接从详情页 URL 下载")
 
     args = parser.parse_args()
 
     if args.test:
         _run_test_mode()
+    elif args.url:
+        _run_download_mode(args.url)
     elif args.search:
         _run_search_mode(args.search, args.download, args.index)
     elif args.download:
-        logger.error("--download 需要配合 --search 使用")
+        logger.error("--download 需要配合 --search 或 --url 使用")
         sys.exit(1)
     else:
         run_tui()
@@ -48,6 +51,22 @@ def _run_test_mode() -> None:
     output_file = OUTPUT_DIR / "test_data.json"
     save_to_json(result.model_dump(), output_file)
     logger.info(f"测试完成，共抓取 {len(items)} 条数据")
+
+
+def _run_download_mode(url: str) -> None:
+    """直接从详情页 URL 下载"""
+    setup_logging()
+    logger.info(f"获取 magnet: {url}")
+
+    magnet = get_magnet_link(url)
+    if not magnet:
+        logger.error("无法获取 magnet 链接")
+        sys.exit(1)
+
+    logger.info(f"Magnet: {magnet[:60]}...")
+    success = download_with_libtorrent(magnet)
+    if not success:
+        sys.exit(1)
 
 
 def _run_search_mode(keyword: str, download: bool, index: int) -> None:
