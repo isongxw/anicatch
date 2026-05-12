@@ -53,6 +53,7 @@ anicatch --search "JOJO"                                    # 搜索
 anicatch --search "JOJO" --download --index 0                # 搜索并下载
 anicatch --search "JOJO" --download -o ~/Downloads           # 下载到指定目录
 anicatch --download "https://miobt.com/show-xxx.html"        # 直接下载
+anicatch --download "URL" -o ~/Downloads                    # 下载到指定目录
 anicatch --seasons                                          # 列出所有季度
 anicatch --season                                           # 浏览当前季度
 anicatch --season 1 --download --index 0                     # 下载指定季度番剧

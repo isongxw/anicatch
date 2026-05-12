@@ -53,6 +53,7 @@ anicatch --search "Demon Slayer"                               # Search
 anicatch --search "Demon Slayer" --download --index 0           # Search and download
 anicatch --search "Demon Slayer" --download -o ~/Downloads      # Download to custom dir
 anicatch --download "https://miobt.com/show-xxx.html"           # Download by URL
+anicatch --download "URL" -o ~/Downloads                     # Download to custom dir
 anicatch --seasons                                             # List all seasons
 anicatch --season                                              # Browse current season
 anicatch --season 1 --download --index 0                        # Download from season
