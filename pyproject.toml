@@ -1,9 +1,26 @@
 [project]
 name = "anicatch"
 version = "0.1.0"
-description = "AniCatch - miobt.com 动漫资源爬虫"
+description = "Anime torrent scraper for miobt.com — browse by season, search, and download via BitTorrent"
 readme = "README.md"
 requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "isongxw" },
+]
+keywords = ["anime", "torrent", "scraper", "miobt", "bittorrent", "download"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Utilities",
+]
 dependencies = [
     "browserforge>=1.2.4",
     "curl-cffi>=0.15.0",
@@ -14,6 +31,10 @@ dependencies = [
     "libtorrent>=2.0.11",
     "textual>=0.44.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/isongxw/anicatch"
+Repository = "https://github.com/isongxw/anicatch"
 
 [project.scripts]
 anicatch = "anicatch.__main__:main_cli"
