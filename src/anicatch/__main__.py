@@ -60,7 +60,16 @@ def _run_search_mode(keyword: str, download: bool, index: int) -> None:
 
     output_file = OUTPUT_DIR / f"search_{keyword}.json"
     save_to_json(result.model_dump(), output_file)
-    logger.info(f"搜索完成，共找到 {len(items)} 条结果")
+
+    # 直接输出结果到 stdout
+    print(f"\n共 {len(items)} 条结果:\n")
+    for i, item in enumerate(items):
+        print(f"[{i}] {item.title}")
+        print(
+            f"    大小: {item.size} | 时间: {item.publish_time} | 上传: {item.uploader}"
+        )
+        print(f"    链接: {item.download_link}")
+        print()
 
     if download:
         logger.info(f"开始下载索引 {index} 的资源...")
