@@ -45,6 +45,6 @@ docs/
 .DS_Store
 Thumbs.db
 
-# Claude Code
-CLAUDE.md
-AGENTS.md
+# Claude Code (root only)
+/CLAUDE.md
+/AGENTS.md
