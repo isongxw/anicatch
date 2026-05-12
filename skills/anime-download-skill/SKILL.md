@@ -1,5 +1,5 @@
 ---
-name: anicatch
+name: anime-download-skill
 description: Use when the user asks to search anime torrents, download anime episodes, find anime resources, or browse miobt.com. Triggers on keywords like search anime, download anime, anime torrent, 番剧, 动漫下载, 磁力链接, magnet.
 ---
 
